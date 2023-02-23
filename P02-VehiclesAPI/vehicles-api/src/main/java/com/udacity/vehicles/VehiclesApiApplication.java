@@ -61,7 +61,7 @@ public class VehiclesApiApplication {
      * @return created pricing endpoint
      */
     @Bean(name="pricing")
-    public WebClient webClientPricing(@Value("${pricing.endpoint}") String endpoint) {
+    public WebClient webClientPricing (@Value("${pricing.endpoint}")String endpoint) {
         return WebClient.create(endpoint);
     }
 

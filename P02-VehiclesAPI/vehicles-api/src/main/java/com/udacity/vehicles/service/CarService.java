@@ -1,8 +1,15 @@
 package com.udacity.vehicles.service;
 
+import com.udacity.vehicles.client.maps.MapsClient;
+import com.udacity.vehicles.client.prices.PriceClient;
+import com.udacity.vehicles.domain.Location;
 import com.udacity.vehicles.domain.car.Car;
 import com.udacity.vehicles.domain.car.CarRepository;
+
+import java.time.LocalDateTime;
 import java.util.List;
+
+
 import org.springframework.stereotype.Service;
 
 /**
@@ -10,18 +17,28 @@ import org.springframework.stereotype.Service;
  * information about vehicles, as well as gather related
  * location and price data when desired.
  */
+
+
 @Service
 public class CarService {
 
+
     private final CarRepository repository;
 
-    public CarService(CarRepository repository) {
+    private final MapsClient mapsClient;
+
+    private final PriceClient priceClient;
+
+    public CarService(CarRepository repository, MapsClient mapsClient, PriceClient priceClient) {
         /**
          * TODO: Add the Maps and Pricing Web Clients you create
          *   in `VehiclesApiApplication` as arguments and set them here.
          */
+        this.mapsClient = mapsClient;
+        this.priceClient= priceClient;
         this.repository = repository;
     }
+
 
     /**
      * Gathers a list of all vehicles
@@ -43,7 +60,13 @@ public class CarService {
          *   Remove the below code as part of your implementation.
          */
         Car car = new Car();
-
+        if(repository.existsById(id)){
+            car = repository.findById(id).get();
+            car.setPrice(priceClient.getPrice(car.getId()));
+            car.setLocation(mapsClient.getAddress(new Location(car.getLocation().getLat(), car.getLocation().getLon())));
+        }else {
+            throw new CarNotFoundException("Car not found");
+        }
         /**
          * TODO: Use the Pricing Web client you create in `VehiclesApiApplication`
          *   to get the price based on the `id` input'
@@ -76,7 +99,10 @@ public class CarService {
             return repository.findById(car.getId())
                     .map(carToBeUpdated -> {
                         carToBeUpdated.setDetails(car.getDetails());
+                        carToBeUpdated.setModifiedAt(LocalDateTime.now());
                         carToBeUpdated.setLocation(car.getLocation());
+                        carToBeUpdated.setCondition(car.getCondition());
+                        carToBeUpdated.setPrice(car.getPrice());
                         return repository.save(carToBeUpdated);
                     }).orElseThrow(CarNotFoundException::new);
         }
@@ -93,7 +119,11 @@ public class CarService {
          * TODO: Find the car by ID from the `repository` if it exists.
          *   If it does not exist, throw a CarNotFoundException
          */
-
+        if(this.repository.existsById(id)){
+            this.repository.deleteById(id);
+        }else {
+            throw new CarNotFoundException();
+        }
 
         /**
          * TODO: Delete the car from the repository.
